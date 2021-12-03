@@ -4,4 +4,4 @@
    [clojure.string :as str]))
 
 (defn read-file [file-path]
-  (str/split-lines (slurp (io/resource "day2.txt"))))
+  (str/split-lines (slurp (io/resource file-path))))

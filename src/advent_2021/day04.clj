@@ -3,41 +3,32 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
-(defn line-won? [line] (every? #(= % :m) line))
+(defn board-won? [board]
+  (->> board
+       (map (fn [line] (map (fn [[_ mark]] mark) line)))
+       (some (fn [line] (every? #(= % :m) line)))))
 
 (defn won? [board]
   (when
       (or
+       (board-won? board)
        (->> board
-            (map (fn [hor-line] (map (fn [[_ mark]] mark) hor-line)))
-            (some line-won?))
-       (->> board
-            (mapcat (fn [hor-line] (map-indexed vector hor-line)))
-            (group-by first)
-            vals
-            (map (fn [vert-line] (map (fn [[_ [_ mark]]] mark ) vert-line)))
-            (some line-won?)))
+            (apply map vector)
+            board-won?))
     board))
 
 (defn mark-number [number board]
-  (map
-   (fn [hor-line]
-     (map (fn [[num mark]] (if (= num number) [num :m] [num mark]))hor-line))
-   board))
+  (for [line board]
+    (for [[num mark] line]
+      (if (= num number) [num :m] [num mark]))))
 
 (defn prep-boards [boards]
-  (->> boards
-       (map
-        (fn [board]
-          (map
-           (fn [line]
-             (map
-              #(vector % :u)
-              (-> line
-                  (str/trim)
-                  (str/replace "  " " ")
-                  (str/split #" "))))
-           board)))))
+  (for [board boards]
+    (for [line board]
+      (for [cell (-> line
+                     (str/trim)
+                     (str/split #"\s+"))]
+        [cell :u]))))
 
 (defn unmarked-numbers-sum [board]
   (->> board

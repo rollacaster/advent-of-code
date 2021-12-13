@@ -1,5 +1,6 @@
 (ns advent-2021.day02
-  (:require [advent-2021.utils :refer [read-file]]))
+  (:require [advent-2021.utils :refer [read-file]]
+            [clojure.string :as str]))
 
 (defn prep [data]
   (->> data

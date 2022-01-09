@@ -3,71 +3,63 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
+(defn parse-board [board]
+  (map #(re-seq #"\d+" %) board))
+
+(defn parse-input [input]
+  (let [[[input] & boards]
+        (->> (str/split input #"\n")
+             (partition-by #(= % ""))
+             (remove #(= % '(""))))]
+    {:draws (str/split input #",")
+     :boards (map parse-board boards)}))
+
 (defn board-won? [board]
-  (->> board
-       (map (fn [line] (map (fn [[_ mark]] mark) line)))
-       (some (fn [line] (every? #(= % :m) line)))))
+  (some (fn [line] (every? #(= % :marked) line)) board))
 
 (defn won? [board]
-  (when
-      (or
-       (board-won? board)
-       (->> board
-            (apply map vector)
-            board-won?))
+  (when (or
+         (board-won? board)
+         (->> board
+              (apply map vector)
+              board-won?))
     board))
 
 (defn mark-number [number board]
   (for [line board]
-    (for [[num mark] line]
-      (if (= num number) [num :m] [num mark]))))
-
-(defn prep-boards [boards]
-  (for [board boards]
-    (for [line board]
-      (for [cell (-> line
-                     (str/trim)
-                     (str/split #"\s+"))]
-        [cell :u]))))
+    (for [num line]
+      (if (= num number) :marked num))))
 
 (defn unmarked-numbers-sum [board]
   (->> board
-       (mapcat (fn [hor-line] (filter (fn [[num mark]] (= mark :u)) hor-line)))
-       (map #(Integer/parseInt (first %)))
+       (mapcat (fn [hor-line] (remove (fn [num] (= num :marked)) hor-line)))
+       (map parse-long)
        (apply +)))
 
 (defn part1 [input]
-  (let [[[input] & boards] (->> (str/split input #"\n")
-                                (partition-by #(= % ""))
-                                (remove #(= % '(""))))
-        boards (prep-boards boards)
-        inputs (str/split input #",")]
+  (let [{:keys [draws boards]} (parse-input input)]
     (reduce
      (fn [boards number]
-       (let [updated-boards (map (partial mark-number number) boards)]
+       (let [updated-boards (map (fn [board] (mark-number number board)) boards)]
          (if (some won? updated-boards)
-           (reduced (* (Integer/parseInt number)
+           (reduced (* (parse-long number)
                        (unmarked-numbers-sum (some won? updated-boards))))
            updated-boards)))
      boards
-     inputs)))
+     draws)))
 
 (defn part2 [input]
-  (let [[[input] & boards] (->> (str/split input #"\n")
-                                (partition-by #(= % ""))
-                                (remove #(= % '(""))))
-        boards (prep-boards boards)
-        inputs (str/split input #",")]
+  (let [{:keys [draws boards]} (parse-input input)]
     (reduce
      (fn [boards number]
-       (let [updated-boards (map (partial mark-number number) boards)]
+       (let [updated-boards (map (fn [board] (mark-number number board)) boards)]
          (if (every? won? updated-boards)
-           (reduced (* (Integer/parseInt number)
-                       (unmarked-numbers-sum
-                        (mark-number number (first (filter (complement won?) boards))))))
-           updated-boards)))
+            (reduced (* (parse-long number)
+                        (unmarked-numbers-sum
+                         (mark-number number (first (filter (complement won?) boards))))))
+            updated-boards)))
      boards
-     inputs)))
+     draws)))
 
 (comment
   (part1 (slurp (io/resource "day4.txt")))

@@ -1,63 +1,60 @@
 (ns advent-2021.day05
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]))
+   [clojure.math.combinatorics :as combo]))
 
 (defn parse-input [input]
-  (for [line (str/split-lines input)]
-    (for [coord-str (str/split line #" -> ")]
-      (map #(Integer/parseInt %) (str/split coord-str #",")))))
+  (->> input
+       (re-seq #"(\d+),(\d+) -> (\d+),(\d+)")
+       (map rest)
+       (map #(->> % (map parse-long) (partition 2)))))
 
-(defn bound [lines]
-  (apply max (flatten (map flatten lines))))
+(defn vertical-or-horizontal? [[[x1 y1] [x2 y2]]] (or (= x1 x2) (= y1 y2)))
 
-(defn draw-grid [max-bound]
-  (into
-   []
-   (for [x (range (inc max-bound))]
-     (into [] (for [y (range (inc max-bound))]
-                ".")))))
+(defn range-2 [[start end]]
+  (range start
+         ((if (> start end) dec inc) end)
+         (if (> start end) -1 1)))
 
-(defn points [part2 [[x1 y1] [x2 y2]]]
-  (cond
-    (= x1 x2)
-    (for [y (range y1
-                   ((if (< y1 y2) inc dec) y2)
-                   (if (< y1 y2) 1 -1))]
-      [x1 y])
-    (= y1 y2)
-    (for [x (range x1
-                   ((if (< x1 x2) inc dec) x2)
-                   (if (< x1 x2) 1 -1))]
-      [x y1])
-    :else (if part2
-            (map
-             (fn [x y] [x y])
-             (range x1 ((if (< x1 x2) inc dec) x2) (if (< x1 x2) 1 -1))
-             (range y1 ((if (< y1 y2) inc dec) y2) (if (< y1 y2) 1 -1)))
-            [])))
+(defn vh-line-segment->coords [line-segment]
+  (->> line-segment
+       (apply map vector)
+       (map range-2)
+       (apply combo/cartesian-product)))
 
-(defn mult-overlaps [grid]
-  (count (filter #(and (int? %) (> % 1)) (flatten grid))))
+(defn count-overlaps [coords]
+  (->> coords
+       frequencies
+       vals
+       (filter #(> % 1))
+       count))
 
-(defn res [part2 input]
-  (let [lines (parse-input input)]
-    (->> lines
-         (reduce
-          (fn [grid line]
-            (reduce
-             (fn [grid [x y]]
-               (update-in grid [y x] (fn [v] (if (int? v)
-                                              (inc v)
-                                              1))))
-             grid
-             (points part2 line)))
-          (draw-grid (bound lines)))
-         mult-overlaps)))
+(defn d-line-segment->coords [line-segment]
+  (->> line-segment
+       (apply map vector)
+       (map range-2)
+       (apply map vector)))
 
-(defn part1 [input] (res false input))
-(defn part2 [input] (res true input))
+(defn line-segment->coords [line-segment]
+  ((if (vertical-or-horizontal? line-segment)
+     vh-line-segment->coords
+     d-line-segment->coords)
+   line-segment))
+
+(defn part1 [input]
+  (->> input
+       parse-input
+       (filter vertical-or-horizontal?)
+       (mapcat line-segment->coords)
+       count-overlaps))
+
+(defn part2 [input]
+  (->> input
+       parse-input
+       (mapcat line-segment->coords)
+       count-overlaps))
 
 (comment
   (part1 (slurp (io/resource "day5.txt")))
   (part2 (slurp (io/resource "day5.txt"))))
+

@@ -1,36 +1,38 @@
 (ns advent-2021.day06
   (:require
-   [clojure.java.io :as io]
-   [clojure.string :as str]))
+   [clojure.java.io :as io]))
 
 (defn prep-input [input]
-  (map #(Integer/parseInt %) (str/split (str/trim input) #",")))
+  (->> input (re-seq #"\d") (map parse-long)))
 
+(defn next-day [state]
+  (reduce-kv
+   (fn [next day fish-count]
+     (cond-> next
+       (= day 0)
+       (assoc 6 (+ fish-count (get state 7 0))
+              8 fish-count)
+       (= day 7) (assoc 6 (+ fish-count (get state 0 0)))
+       (and (not= day 0) (not= day 7)) (assoc (dec day) fish-count)))
+   {}
+   state))
 
-(defn part1 [days input]
-  (->> (range days)
-       (reduce
-        (fn [state _]
-          (let [new-fish (count (filter #(< % 0) (map dec state)))]
-            (concat
-             (map (fn [timer] (if (< (dec timer) 0) 6 (dec timer))) state)
-             (repeat new-fish 8))))
-        (prep-input input))
-       count))
+(defn calc [input day-count]
+  (->> input
+       prep-input
+       frequencies
+       (iterate next-day)
+       (take (inc day-count))
+       last
+       (map second)
+       (apply +)))
 
-(def count-f
-  (memoize
-   (fn [day fish]
-     (if (= day 0) 1
-         (reduce
-          +
-          (map
-           (partial count-f (dec day) fish)
-           (if (= fish 0) [6 8] [(dec fish)])))))))
+(defn part1 [input]
+  (calc input 80))
 
-(defn part2 [days input]
-  (apply + (map (partial count-f days) (prep-input input))))
+(defn part2 [input]
+  (calc input 256))
 
 (comment
-  (part1 80 (slurp (io/resource "day6.txt")))
-  (part2 256 (slurp (io/resource "day6.txt"))))
+  (part1 (slurp (io/resource "day6.txt")))
+  (part2 (slurp (io/resource "day6.txt"))))

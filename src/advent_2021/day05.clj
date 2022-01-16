@@ -16,11 +16,16 @@
          ((if (> start end) dec inc) end)
          (if (> start end) -1 1)))
 
-(defn vh-line-segment->coords [line-segment]
+(defn combine-coords [line-segment coords]
+  (if (vertical-or-horizontal? line-segment)
+    (apply combo/cartesian-product coords)
+    (apply map vector coords)))
+
+(defn line-segment->coords [line-segment]
   (->> line-segment
        (apply map vector)
        (map range-2)
-       (apply combo/cartesian-product)))
+       (combine-coords line-segment)))
 
 (defn count-overlaps [coords]
   (->> coords
@@ -28,18 +33,6 @@
        vals
        (filter #(> % 1))
        count))
-
-(defn d-line-segment->coords [line-segment]
-  (->> line-segment
-       (apply map vector)
-       (map range-2)
-       (apply map vector)))
-
-(defn line-segment->coords [line-segment]
-  ((if (vertical-or-horizontal? line-segment)
-     vh-line-segment->coords
-     d-line-segment->coords)
-   line-segment))
 
 (defn part1 [input]
   (->> input

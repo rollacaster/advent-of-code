@@ -3,27 +3,28 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
+(defn parse-input [input]
+  (map #(Integer/parseInt %) (str/split (str/trim input) #",")))
+
+(defn run [input cost-fn]
+  (->> (range (apply min input) (inc (apply max input)))
+       (map
+        (fn [pos]
+          (->> input
+               (map (fn [i] (cost-fn i pos)))
+               (reduce +))))
+       (apply min)))
+
 (defn part1 [input]
-  (let [input (map #(Integer/parseInt %) (str/split input #","))]
-    (->> input
-         set
-         (map
-          (fn [pos]
-            (->> input
-                 (map (fn [i] (Math/abs (- i pos))))
-                 (reduce +))))
-         (apply min))))
+  (let [input (parse-input input)]
+    (run input (fn [from to] (Math/abs (- from to))))))
 
 (defn part2 [input]
-  (let [input (map #(Integer/parseInt %) (str/split input #","))]
-    (->> (range (apply min input) (inc (apply max input)))
-         (map
-          (fn [pos]
-            (->> input
-                 (map (fn [i] (apply + (range 1 (inc (Math/abs (- i pos)))))))
-                 (reduce +))))
-         (apply min))))
+  (let [input (parse-input input)]
+    (run input (fn [from to] (/ (* (Math/abs (- from to))
+                                  (inc (Math/abs (- from to))))
+                               2)))))
 
 (comment
-  (part1 (str/trim (slurp (io/resource "day7.txt"))))
-  (part2 (str/trim (slurp (io/resource "day7.txt")))))
+  (part1 (slurp (io/resource "day7.txt")))
+  (part2 (slurp (io/resource "day7.txt"))))

@@ -1,0 +1,7 @@
+{:deps {
+        io.github.nextjournal/clerk {:mvn/version "0.4.305"}
+        net.mikera/core.matrix {:mvn/version "0.62.0"}
+        org.clojure/math.combinatorics {:mvn/version "0.1.6"}
+        rhizome/rhizome {:mvn/version "0.2.9"}
+        org.clojure/clojure {:mvn/version "1.11.0-alpha3"}}
+ :paths ["src" "resources"]}
